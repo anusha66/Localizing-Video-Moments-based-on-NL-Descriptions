@@ -1,0 +1,592 @@
+layer {
+  name: "features_p"
+  type: "Python"
+  top: "features_p"
+  top: "query"
+  top: "features_time_stamp_p"
+  top: "features_time_stamp_n"
+  top: "features_inter"
+  top: "features_intra"
+  top: "cont"
+  python_param {
+    module: "data_processing"
+    layer: "dataLayer_ExtractPairedLanguageVision"
+    param_str: "{\'sentence_length\': 50, \'descriptions\': \'data/train_data.json\', \'features\': \'data/fc_i3d_FEA_ALL.hdf5\', \'top_names\': [\'features_p\', \'query\', \'features_time_stamp_p\', \'features_time_stamp_n\', \'features_inter\', \'features_intra\', \'cont\'], \'top_names_dict\': {\'features_p\': 0, \'query\': 1, \'features_time_stamp_p\': 2, \'features_time_stamp_n\': 3, \'features_inter\': 4, \'features_intra\': 5, \'cont\': 6}, \'feature_process\': \'feature_process_context\', \'loc_feature\': True, \'language_feature\': \'recurrent_embedding\', \'loss_type\': \'triplet\', \'batch_size\': 120, \'vocab_size\': 6832}"
+  }
+}
+layer {
+  name: "Concat1"
+  type: "Concat"
+  bottom: "features_intra"
+  bottom: "features_time_stamp_n"
+  top: "Concat1"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "InnerProduct1"
+  type: "InnerProduct"
+  bottom: "Concat1"
+  top: "InnerProduct1"
+  param {
+    name: "image_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 500
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "ReLU1"
+  type: "ReLU"
+  bottom: "InnerProduct1"
+  top: "ReLU1"
+}
+layer {
+  name: "InnerProduct2"
+  type: "InnerProduct"
+  bottom: "ReLU1"
+  top: "InnerProduct2"
+  param {
+    name: "image_embed2"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_b2"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "embedding_visual"
+  type: "Dropout"
+  bottom: "InnerProduct2"
+  top: "embedding_visual"
+  dropout_param {
+    dropout_ratio: 0.30000001192092896
+  }
+}
+layer {
+  name: "LSTM1"
+  type: "LSTM"
+  bottom: "query"
+  bottom: "cont"
+  top: "LSTM1"
+  param {
+    name: "lstm1"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  param {
+    name: "lstm2"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  param {
+    name: "lstm3"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  recurrent_param {
+    num_output: 1000
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "Slice1"
+  type: "Slice"
+  bottom: "LSTM1"
+  top: "Slice1"
+  top: "Slice2"
+  slice_param {
+    slice_point: 49
+    axis: 0
+  }
+}
+layer {
+  name: "silence_cell_0"
+  type: "Silence"
+  bottom: "Slice1"
+}
+layer {
+  name: "Reshape1"
+  type: "Reshape"
+  bottom: "Slice2"
+  top: "Reshape1"
+  reshape_param {
+    shape {
+      dim: -1
+      dim: 1000
+    }
+  }
+}
+layer {
+  name: "embedding_text"
+  type: "InnerProduct"
+  bottom: "Reshape1"
+  top: "embedding_text"
+  param {
+    name: "lstm_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "lstm_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "Concat2"
+  type: "Concat"
+  bottom: "features_p"
+  bottom: "features_time_stamp_p"
+  top: "Concat2"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "InnerProduct3"
+  type: "InnerProduct"
+  bottom: "Concat2"
+  top: "InnerProduct3"
+  param {
+    name: "image_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 500
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "ReLU2"
+  type: "ReLU"
+  bottom: "InnerProduct3"
+  top: "ReLU2"
+}
+layer {
+  name: "InnerProduct4"
+  type: "InnerProduct"
+  bottom: "ReLU2"
+  top: "InnerProduct4"
+  param {
+    name: "image_embed2"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_b2"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "Dropout1"
+  type: "Dropout"
+  bottom: "InnerProduct4"
+  top: "Dropout1"
+  dropout_param {
+    dropout_ratio: 0.30000001192092896
+  }
+}
+layer {
+  name: "Power1"
+  type: "Power"
+  bottom: "embedding_text"
+  top: "Power1"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise1"
+  type: "Eltwise"
+  bottom: "Dropout1"
+  bottom: "Power1"
+  top: "Eltwise1"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power2"
+  type: "Power"
+  bottom: "Eltwise1"
+  top: "Power2"
+  power_param {
+    power: 2.0
+  }
+}
+layer {
+  name: "Reduction1"
+  type: "Reduction"
+  bottom: "Power2"
+  top: "Reduction1"
+  reduction_param {
+    axis: 1
+  }
+}
+layer {
+  name: "Concat3"
+  type: "Concat"
+  bottom: "features_inter"
+  bottom: "features_time_stamp_p"
+  top: "Concat3"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "InnerProduct5"
+  type: "InnerProduct"
+  bottom: "Concat3"
+  top: "InnerProduct5"
+  param {
+    name: "image_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 500
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "ReLU3"
+  type: "ReLU"
+  bottom: "InnerProduct5"
+  top: "ReLU3"
+}
+layer {
+  name: "InnerProduct6"
+  type: "InnerProduct"
+  bottom: "ReLU3"
+  top: "InnerProduct6"
+  param {
+    name: "image_embed2"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_b2"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "Dropout2"
+  type: "Dropout"
+  bottom: "InnerProduct6"
+  top: "Dropout2"
+  dropout_param {
+    dropout_ratio: 0.30000001192092896
+  }
+}
+layer {
+  name: "Power3"
+  type: "Power"
+  bottom: "embedding_text"
+  top: "Power3"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise2"
+  type: "Eltwise"
+  bottom: "Dropout2"
+  bottom: "Power3"
+  top: "Eltwise2"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power4"
+  type: "Power"
+  bottom: "Eltwise2"
+  top: "Power4"
+  power_param {
+    power: 2.0
+  }
+}
+layer {
+  name: "Reduction2"
+  type: "Reduction"
+  bottom: "Power4"
+  top: "Reduction2"
+  reduction_param {
+    axis: 1
+  }
+}
+layer {
+  name: "Power5"
+  type: "Power"
+  bottom: "Reduction2"
+  top: "Power5"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise3"
+  type: "Eltwise"
+  bottom: "Reduction1"
+  bottom: "Power5"
+  top: "Eltwise3"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power6"
+  type: "Power"
+  bottom: "Eltwise3"
+  top: "Power6"
+  power_param {
+    shift: 0.10000000149011612
+  }
+}
+layer {
+  name: "ReLU4"
+  type: "ReLU"
+  bottom: "Power6"
+  top: "ReLU4"
+}
+layer {
+  name: "ranking_loss_inter"
+  type: "Reduction"
+  bottom: "ReLU4"
+  top: "ranking_loss_inter"
+  loss_weight: 0.20000000298023224
+  reduction_param {
+    operation: MEAN
+  }
+}
+layer {
+  name: "Power7"
+  type: "Power"
+  bottom: "embedding_text"
+  top: "Power7"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise4"
+  type: "Eltwise"
+  bottom: "Dropout1"
+  bottom: "Power7"
+  top: "Eltwise4"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power8"
+  type: "Power"
+  bottom: "Eltwise4"
+  top: "Power8"
+  power_param {
+    power: 2.0
+  }
+}
+layer {
+  name: "Reduction3"
+  type: "Reduction"
+  bottom: "Power8"
+  top: "Reduction3"
+  reduction_param {
+    axis: 1
+  }
+}
+layer {
+  name: "Power9"
+  type: "Power"
+  bottom: "embedding_text"
+  top: "Power9"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise5"
+  type: "Eltwise"
+  bottom: "embedding_visual"
+  bottom: "Power9"
+  top: "Eltwise5"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power10"
+  type: "Power"
+  bottom: "Eltwise5"
+  top: "Power10"
+  power_param {
+    power: 2.0
+  }
+}
+layer {
+  name: "Reduction4"
+  type: "Reduction"
+  bottom: "Power10"
+  top: "Reduction4"
+  reduction_param {
+    axis: 1
+  }
+}
+layer {
+  name: "Power11"
+  type: "Power"
+  bottom: "Reduction4"
+  top: "Power11"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise6"
+  type: "Eltwise"
+  bottom: "Reduction3"
+  bottom: "Power11"
+  top: "Eltwise6"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power12"
+  type: "Power"
+  bottom: "Eltwise6"
+  top: "Power12"
+  power_param {
+    shift: 0.10000000149011612
+  }
+}
+layer {
+  name: "ReLU5"
+  type: "ReLU"
+  bottom: "Power12"
+  top: "ReLU5"
+}
+layer {
+  name: "ranking_loss_intra"
+  type: "Reduction"
+  bottom: "ReLU5"
+  top: "ranking_loss_intra"
+  loss_weight: 0.5
+  reduction_param {
+    operation: MEAN
+  }
+}
+

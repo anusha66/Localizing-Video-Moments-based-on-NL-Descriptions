@@ -1,0 +1,256 @@
+layer {
+  name: "image_data"
+  type: "DummyData"
+  top: "image_data"
+  dummy_data_param {
+    shape {
+      dim: 21
+      dim: 10240
+    }
+  }
+}
+layer {
+  name: "loc_data"
+  type: "DummyData"
+  top: "loc_data"
+  dummy_data_param {
+    shape {
+      dim: 21
+      dim: 2
+    }
+  }
+}
+layer {
+  name: "Concat1"
+  type: "Concat"
+  bottom: "image_data"
+  bottom: "loc_data"
+  top: "Concat1"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "InnerProduct1"
+  type: "InnerProduct"
+  bottom: "Concat1"
+  top: "InnerProduct1"
+  param {
+    name: "image_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 500
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "ReLU1"
+  type: "ReLU"
+  bottom: "InnerProduct1"
+  top: "ReLU1"
+}
+layer {
+  name: "InnerProduct2"
+  type: "InnerProduct"
+  bottom: "ReLU1"
+  top: "InnerProduct2"
+  param {
+    name: "image_embed2"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "image_embed_b2"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+    axis: 1
+  }
+}
+layer {
+  name: "embedding_visual"
+  type: "Dropout"
+  bottom: "InnerProduct2"
+  top: "embedding_visual"
+  dropout_param {
+    dropout_ratio: 0.30000001192092896
+  }
+}
+layer {
+  name: "text_data"
+  type: "DummyData"
+  top: "text_data"
+  dummy_data_param {
+    shape {
+      dim: 50
+      dim: 21
+      dim: 300
+    }
+  }
+}
+layer {
+  name: "cont_data"
+  type: "DummyData"
+  top: "cont_data"
+  dummy_data_param {
+    shape {
+      dim: 50
+      dim: 21
+    }
+  }
+}
+layer {
+  name: "LSTM1"
+  type: "LSTM"
+  bottom: "text_data"
+  bottom: "cont_data"
+  top: "LSTM1"
+  param {
+    name: "lstm1"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  param {
+    name: "lstm2"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  param {
+    name: "lstm3"
+    lr_mult: 10.0
+    decay_mult: 10.0
+  }
+  recurrent_param {
+    num_output: 1000
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "Slice1"
+  type: "Slice"
+  bottom: "LSTM1"
+  top: "Slice1"
+  top: "Slice2"
+  slice_param {
+    slice_point: 49
+    axis: 0
+  }
+}
+layer {
+  name: "silence_cell_0"
+  type: "Silence"
+  bottom: "Slice1"
+}
+layer {
+  name: "Reshape1"
+  type: "Reshape"
+  bottom: "Slice2"
+  top: "Reshape1"
+  reshape_param {
+    shape {
+      dim: -1
+      dim: 1000
+    }
+  }
+}
+layer {
+  name: "embedding_text"
+  type: "InnerProduct"
+  bottom: "Reshape1"
+  top: "embedding_text"
+  param {
+    name: "lstm_embed1"
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    name: "lstm_embed_1b"
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 100
+    weight_filler {
+      type: "uniform"
+      min: -0.07999999821186066
+      max: 0.07999999821186066
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "Power1"
+  type: "Power"
+  bottom: "embedding_text"
+  top: "Power1"
+  power_param {
+    scale: -1.0
+  }
+}
+layer {
+  name: "Eltwise1"
+  type: "Eltwise"
+  bottom: "embedding_visual"
+  bottom: "Power1"
+  top: "Eltwise1"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layer {
+  name: "Power2"
+  type: "Power"
+  bottom: "Eltwise1"
+  top: "Power2"
+  power_param {
+    power: 2.0
+  }
+}
+layer {
+  name: "rank_score"
+  type: "Reduction"
+  bottom: "Power2"
+  top: "rank_score"
+  reduction_param {
+    axis: 1
+  }
+}
+
